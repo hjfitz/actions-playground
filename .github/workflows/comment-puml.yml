@@ -59,9 +59,9 @@ jobs:
             console.log(files)
 
             async function main() {
-              const allText = await Promise.all(files.map(file => ({
+              const allText = await Promise.all(files.map(async file => ({
                 file,
-                design: getPumlForPath(file),
+                design: await getPumlForPath(file),
               })))
 
               const header = '# 🏗 New designs detected\n\n'
