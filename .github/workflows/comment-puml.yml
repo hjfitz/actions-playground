@@ -1,0 +1,32 @@
+name: Run on PR comment
+
+on:
+  pull_request:
+    types: [opened]
+    paths: ['**.puml', '**.pml']
+
+jobs:
+  comment-puml:
+    runs-on: ubuntu-latest
+    name: Fetch changed files
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v19
+
+      - name: Like pizza
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const {owner, repo} = context.issue
+            github.reactions.createForIssueComment({
+              owner,
+              repo,
+              comment_id: context.payload.comment.id,
+              content: "+1",
+            });
