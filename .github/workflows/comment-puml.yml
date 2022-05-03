@@ -8,7 +8,7 @@ on:
 jobs:
   comment-puml:
     runs-on: ubuntu-latest
-    name: Fetch changed files
+    name: Comment new diagrams
     steps:
 
       - uses: actions/checkout@v3
@@ -19,14 +19,14 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v19
 
-      - name: Like pizza
+      - name: Comment on PR
         uses: actions/github-script@v4
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const {owner, repo} = context.issue
-            github.reactions.createForIssueComment({
-              owner,
-              repo,
-              comment_id: context.payload.comment.id,
-              content: "+1",
-            });
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Thanks for reporting!'
+            })
