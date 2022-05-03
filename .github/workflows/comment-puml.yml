@@ -1,5 +1,9 @@
 name: Run on PR comment
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   pull_request:
     types: [opened, reopened]
@@ -8,7 +12,7 @@ on:
 jobs:
   comment-puml:
     runs-on: ubuntu-latest
-    name: Fetch changed files
+    name: Comment new diagrams
     steps:
 
       - uses: actions/checkout@v3
@@ -19,14 +23,62 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v19
 
-      - name: Like pizza
+      - name: install axios
+        run: yarn add axios
+
+      - name: Comment on PR
         uses: actions/github-script@v4
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const {owner, repo} = context.issue
-            github.reactions.createForIssueComment({
-              owner,
-              repo,
-              comment_id: context.payload.comment.id,
-              content: "+1",
-            });
+            const fs = require('fs')
+            const axios = require('axios')
+
+            async function getPuml(hex) {
+                const resp = await axios.get('https://www.plantuml.com/plantuml/txt/~h' + hex)
+                return resp.data
+            }
+
+            function encodePuml(raw) {
+                return Buffer.from(raw).toString('hex')
+            }
+
+            function readFile(path) {
+                return fs.readFileSync(path).toString()
+            }
+
+            async function getPumlForPath(path) {
+                const contents = readFile(path)
+                const encoded = encodePuml(contents)
+                const puml = await getPuml(encoded)
+                return '```\n' + puml + '\n```'
+            }
+
+            const files = '${{ steps.changed-files.outputs.all_changed_files }}'.split(' ').filter(file => /\.(pml|puml)/.test(file))
+
+            console.log(files)
+
+            async function main() {
+              const allText = await Promise.all(files.map(async file => ({
+                file,
+                design: await getPumlForPath(file),
+              })))
+
+              const header = '# 🏗 New designs detected\n\n'
+
+              const commentBody = header + allText.reduce((acc, cur) => {
+                acc += `## ${cur.file}\n\n${cur.design}`
+                return acc
+              }, '')
+
+              github.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody,
+              })
+
+            }
+
+            main()
+
