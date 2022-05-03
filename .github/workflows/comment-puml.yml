@@ -23,11 +23,41 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v19
 
+      - name: install axios
+        run: yarn add axios
+
       - name: Comment on PR
         uses: actions/github-script@v4
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
+            const fs = require('fs')
+            const axios = require('axios')
+
+            async function getPuml(hex) {
+                const resp = await axios.get('https://www.plantuml.com/plantuml/txt/~h' + hex)
+                return resp.data
+            }
+
+            function encodePuml(raw) {
+                return Buffer.from(raw).toString('hex')
+            }
+
+            function readFile(path) {
+                return fs.readFileSync(path).toString()
+            }
+
+            async function getPumlForPath(path) {
+                const contents = readFile(path)
+                const encoded = encodePuml(contents)
+                const puml = await getPuml(encoded)
+                return '```\n' + puml + '\n```'
+            }
+
+            const files = '${{ steps.changed-files.outputs.all_changed_files }}'
+
+
+
             github.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
