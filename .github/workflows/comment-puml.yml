@@ -54,13 +54,23 @@ jobs:
                 return '```\n' + puml + '\n```'
             }
 
-            const files = '${{ steps.changed-files.outputs.all_changed_files }}'
+            const files = '${{ steps.changed-files.outputs.all_changed_files }}'.split(' ').filter(file => /\.(pml|puml)/.test(file))
 
+            console.log(files)
 
+            async function main() {
+              const allText = await Promise.all(files.map(file => getPumlForPath(file)))
 
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '👋 Fade me fam'
-            })
+              const toComment = allText.join('\n\n')
+
+              github.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: toComment
+              })
+
+            }
+
+            main()
+
