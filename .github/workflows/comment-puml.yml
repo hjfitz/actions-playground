@@ -59,15 +59,23 @@ jobs:
             console.log(files)
 
             async function main() {
-              const allText = await Promise.all(files.map(file => getPumlForPath(file)))
+              const allText = await Promise.all(files.map(file => ({
+                file,
+                design: getPumlForPath(file),
+              })))
 
-              const toComment = allText.join('\n\n')
+              const header = '# 🏗 New designs detected\n\n'
+
+              const commentBody = header + allText.reduce((acc, cur) => {
+                acc += `## ${cur.file}\n\n${cur.design}`
+                return acc
+              }, '')
 
               github.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: toComment
+                body: commentBody,
               })
 
             }
