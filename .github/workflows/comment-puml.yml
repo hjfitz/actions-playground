@@ -1,8 +1,6 @@
 name: Run on PR comment
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: write-all # yeah yeah
 
 on:
   pull_request:
